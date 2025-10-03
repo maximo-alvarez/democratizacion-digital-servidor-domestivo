@@ -1,0 +1,45 @@
+# ----------------------------------------
+# Configuración General
+# ----------------------------------------
+# Zona horaria para los servicios. Ejemplo: America/Guayaquil, Europe/Madrid
+TZ=America/Guayaquil
+
+# ID de Usuario y Grupo para permisos de archivos.
+# Ejecuta 'id -u' en tu terminal para obtener tu PUID y 'id -g' para tu PGID.
+PUID=1000
+PGID=1000
+
+# Ruta base en tu servidor donde se almacenarán todos los datos de los servicios.
+# Asegúrate de que esta ruta exista.
+DATA_BASE_PATH=/mnt/data/programs/cloud
+
+# Dominio principal que usarás para acceder a tus servicios.
+MAIN_DOMAIN=example.com
+
+# ----------------------------------------
+# Configuración de la Base de Datos (PostgreSQL)
+# ----------------------------------------
+POSTGRES_PORT=5433
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=una_contraseña_muy_segura
+
+# ----------------------------------------
+# Puertos de los Servicios (Cambia solo si hay conflictos en tu red)
+# ----------------------------------------
+EXCALIDRAW_PORT=8081
+NEXTCLOUD_PORT=8080
+N8N_PORT=5678
+MATTERMOST_PORT=8065
+PORTAINER_PORT=9000
+# Jellyfin usa network_mode: host, por lo que su puerto (8096) no se mapea aquí.
+
+# ----------------------------------------
+# URLs y Dominios de Confianza
+# ----------------------------------------
+# Lista de dominios y IPs de confianza para Nextcloud, separados por coma.
+# Incluye IPs locales, el nombre del contenedor y los dominios públicos.
+NEXTCLOUD_TRUSTED_DOMAINS=localhost,192.168.0.10,nextcloud,next.${MAIN_DOMAIN}
+
+# URL pública para acceder a tus servicios.
+JELLYFIN_URL=https://jellyfin.${MAIN_DOMAIN}
+MATTERMOST_URL=https://mattermost.${MAIN_DOMAIN}

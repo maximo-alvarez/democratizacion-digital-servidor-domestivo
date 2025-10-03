@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------
+  # Servicio de Excalidraw (Pizarrón virtual)
+  # ----------------------------------------
+  excalidraw:
+    image: excalidraw/excalidraw:latest
+    container_name: excalidraw
+    restart: unless-stopped
+    ports:
+      - "${EXCALIDRAW_PORT:-8081}:80"
+    networks:
+      - dracocloud
+
+  # ----------------------------------------
+  # Servicio de Jellyfin (Servidor de medios)
+  # ----------------------------------------
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    user: ${PUID:-1000}:${PGID:-1000}
+    network_mode: 'host'
+    volumes:
+      - ${DATA_BASE_PATH}/jellyfin/config:/config
+      - ${DATA_BASE_PATH}/jellyfin/cache:/cache
+      - ${DATA_BASE_PATH}/media/movies:/movies
+      - ${DATA_BASE_PATH}/media/tvshows:/tvshows
+      - ${DATA_BASE_PATH}/media/music:/music
+      - ${DATA_BASE_PATH}/media/ebooks:/ebooks
+    restart: 'unless-stopped'
+    environment:
+      - JELLYFIN_PublishedServerUrl=${JELLYFIN_URL}
+
+  # ----------------------------------------
+  # Servicio de Nextcloud (Nube personal)
+  # ----------------------------------------
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    restart: unless-stopped
+    ports:
+      - "${NEXTCLOUD_PORT:-8080}:80"
+    volumes:
+      - ${DATA_BASE_PATH}/nextcloud/data:/var/www/html/data
+      - ${DATA_BASE_PATH}/nextcloud/config:/var/www/html/config
+      - ${DATA_BASE_PATH}/nextcloud/apps:/var/www/html/custom_apps
+    environment:
+      - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_TRUSTED_DOMAINS}
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=postgres
+    depends_on:
+      - postgres
+    networks:
+      - dracocloud
+
+  # ----------------------------------------
+  # Servicio de Postgresql (Base de datos)
+  # ----------------------------------------
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - ${DATA_BASE_PATH}/postgres/data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - dracocloud
+
+  # ----------------------------------------
+  # Servicio de n8n (Automatizaciones)
+  # ----------------------------------------
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    volumes:
+      - ${DATA_BASE_PATH}/n8n/data:/home/node/.n8n
+    environment:
+      - GENERIC_TIMEZONE=${TZ}
+      - TZ=${TZ}
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_POSTGRESDB_SCHEMA=public
+      - N8N_PROTOCOL=https
+      - N8N_SECURE_COOKIE=false
+    networks:
+      - dracocloud
+    depends_on:
+      - postgres
+
+  # ----------------------------------------
+  # Servicio de Mattermost (Comunicación colaborativa)
+  # ----------------------------------------
+  mattermost:
+    image: mattermost/mattermost-team-edition
+    container_name: mattermost
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "${MATTERMOST_PORT:-8065}:8065"
+    environment:
+      - MM_SQLSETTINGS_DRIVERNAME=postgres
+      - MM_SQLSETTINGS_DATASOURCE=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
+      - MM_SERVICESETTINGS_SITEURL=${MATTERMOST_URL}
+    volumes:
+      - ${DATA_BASE_PATH}/mattermost/data:/mattermost/data
+      - ${DATA_BASE_PATH}/mattermost/config:/mattermost/config
+      - ${DATA_BASE_PATH}/mattermost/logs:/mattermost/logs
+      - ${DATA_BASE_PATH}/mattermost/apps:/mattermost/apps
+    networks:
+      - dracocloud
+    depends_on:
+      - postgres
+
+  # ----------------------------------------
+  # Servicio de Portainer (Gestor de Docker)
+  # ----------------------------------------
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "${PORTAINER_PORT:-9000}:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DATA_BASE_PATH}/portainer/data:/data
+    networks:
+      - dracocloud
+
+# ----------------------------------------
+# Definición de la red de Docker
+# ----------------------------------------
+networks:
+  dracocloud:
+    driver: bridge
