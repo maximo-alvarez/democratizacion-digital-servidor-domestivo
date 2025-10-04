@@ -10,11 +10,11 @@ Este repositorio contiene los archivos de configuración (`docker-compose.yml` y
 
 ## 📖 Sobre el Proyecto
 
-[cite_start]En la última década, la transformación digital ha consolidado un paradigma donde la infraestructura tecnológica está dominada por un número reducido de corporaciones (hiperescaladores)[cite: 1767]. [cite_start]Este modelo de centralización genera una dependencia que afecta la privacidad, la seguridad y la autonomía de los usuarios[cite: 1768].
+En la última década, la transformación digital ha consolidado un paradigma donde la infraestructura tecnológica está dominada por un número reducido de corporaciones (hiperescaladores). Este modelo de centralización genera una dependencia que afecta la privacidad, la seguridad y la autonomía de los usuarios.
 
-[cite_start]Frente a este escenario, este proyecto demuestra la **viabilidad técnica, económica y la resiliencia** de un modelo de servidor doméstico autoalojado, utilizando hardware de consumo (Mini PC) y software de código abierto[cite: 1774, 1771]. [cite_start]El objetivo es proporcionar una guía práctica y replicable para que cualquier usuario con interés técnico pueda construir su propia nube personal y recuperar el control sobre sus datos, un paso fundamental hacia la **soberanía digital**[cite: 1798].
+Frente a este escenario, este proyecto demuestra la **viabilidad técnica, económica y la resiliencia** de un modelo de servidor doméstico autoalojado, utilizando hardware de consumo (Mini PC) y software de código abierto. El objetivo es proporcionar una guía práctica y replicable para que cualquier usuario con interés técnico pueda construir su propia nube personal y recuperar el control sobre sus datos, un paso fundamental hacia la **soberanía digital**.
 
-[cite_start]Este repositorio ofrece las herramientas necesarias para replicar la infraestructura descrita, permitiendo a los individuos un control efectivo sobre sus servicios y datos[cite: 1754].
+Este repositorio ofrece las herramientas necesarias para replicar la infraestructura descrita, permitiendo a los individuos un control efectivo sobre sus servicios y datos.
 
 ---
 
@@ -36,11 +36,11 @@ Este proyecto utiliza **Docker** para orquestar un conjunto de servicios de cód
 
 El modelo se basa en una arquitectura modular y resiliente:
 
-1.  [cite_start]**Hardware**: Un **Mini PC** de bajo consumo (GMKtec N100) conectado a un **SAI/UPS** para garantizar la continuidad energética[cite: 1751, 1793].
-2.  [cite_start]**Sistema Operativo**: **Ubuntu Server 24.04 LTS "Noble Numbat"** como base estable y segura[cite: 1751].
+1.  **Hardware**: Un **Mini PC** de bajo consumo (GMKtec N100) conectado a un **SAI/UPS** para garantizar la continuidad energética.
+2.  **Sistema Operativo**: **Ubuntu Server 24.04 LTS "Noble Numbat"** como base estable y segura.
 3.  **Acceso Seguro (Modular)**:
-    * [cite_start]**Método Primario (VPN)**: Uso de **Tailscale** para crear una red privada virtual segura y acceder a los servicios desde cualquier lugar sin exponer puertos[cite: 1752, 539].
-    * [cite_start]**Método Opcional (Proxy Inverso)**: Un **VPS** de bajo costo actúa como proxy inverso, permitiendo el acceso a los servicios a través de dominios públicos (ej. `nextcloud.tudominio.com`) de forma segura[cite: 1752, 544, 546, 548, 550, 552, 554, 556].
+    * **Método Primario (VPN)**: Uso de **Tailscale** para crear una red privada virtual segura y acceder a los servicios desde cualquier lugar sin exponer puertos.
+    * **Método Opcional (Proxy Inverso)**: Un **VPS** de bajo costo actúa como proxy inverso, permitiendo el acceso a los servicios a través de dominios públicos (ej. `nextcloud.tudominio.com`) de forma segura.
 
 ---
 
@@ -88,31 +88,16 @@ Sigue estos pasos para replicar el servidor en tu propio hardware.
 
 Si tienes un segundo disco para los datos:
 
-1.  **Identifica el disco** (ej. `/dev/sda`):
-    ```bash
-    lsblk
-    ```
+1.  **Identifica el disco** (ej. `/dev/sda`): `lsblk`
 2.  **Crea una nueva partición** (ej. `/dev/sda3`) usando `sudo fdisk /dev/sda`.
-3.  **Formatea la nueva partición**:
-    ```bash
-    sudo mkfs.ext4 /dev/sda3
-    ```
+3.  **Formatea la nueva partición**: `sudo mkfs.ext4 /dev/sda3`
 4.  **Monta la partición y configúrala para que se monte al arranque**:
     ```bash
-    # Crea el punto de montaje
     sudo mkdir -p /mnt/data
-    
-    # Monta el disco
     sudo mount /dev/sda3 /mnt/data
-    
-    # Obtén el UUID para el montaje automático
-    sudo blkid /dev/sda3
-    
-    # Añade la línea a /etc/fstab (reemplaza el UUID con el tuyo)
-    # UUID=6cd6474e-9f04-40d9-b393-70dcfb17a768 /mnt/data ext4 defaults 0 0
+    sudo blkid /dev/sda3 # Obtén el UUID
+    # Añade la línea a /etc/fstab (reemplaza el UUID)
     sudo nano /etc/fstab
-    
-    # Verifica que el montaje funciona
     sudo mount -a
     ```
 
@@ -125,53 +110,111 @@ Si tienes un segundo disco para los datos:
     ```
 2.  **Configura tus variables de entorno**:
     * Copia la plantilla: `cp .env.example .env`
-    * Edita el archivo `.env` con tus propios valores (rutas, dominio, contraseñas): `nano .env`
+    * Edita el archivo `.env` con tus propios valores: `nano .env`
 
-3.  **Crea los directorios de datos** (si usas una ruta personalizada en `.env`):
-    * La variable `DATA_BASE_PATH` en tu `.env` debe apuntar a un directorio existente. Asegúrate de crearlo si es necesario.
-
-4.  **Asigna los permisos correctos** a los directorios de volumen:
+3.  **Asigna los permisos correctos** a los directorios de volumen:
     ```bash
-    # Lee la ruta base desde tu archivo .env
     export $(grep -v '^#' .env | xargs)
-    
-    # Asigna permisos
     sudo chown -R 1000:1000 $DATA_BASE_PATH/jellyfin/cache
     sudo chown -R 1000:1000 $DATA_BASE_PATH/jellyfin/config
     sudo chown -R 999:999 $DATA_BASE_PATH/postgres/data
     sudo chown -R 2000:2000 $DATA_BASE_PATH/mattermost/data
     ```
 
-5.  **Inicia todos los servicios**:
+4.  **Inicia todos los servicios**:
     ```bash
     docker compose up -d
     ```
 
 ### Paso 5: Configuración de la Red Privada (Tailscale)
 
-1.  **Instala Tailscale** en el servidor:
+1.  **Instala Tailscale** en el servidor doméstico y en el VPS:
     ```bash
     curl -fsSL [https://tailscale.com/install.sh](https://tailscale.com/install.sh) | sh
     ```
-2.  **Inicia Tailscale y autentícate**:
+2.  **Inicia Tailscale y autentícate** en ambos equipos:
     ```bash
     sudo tailscale up
     ```
-    > Sigue el enlace que te mostrará en la terminal para añadir el servidor a tu cuenta de Tailscale. Instala Tailscale en tus otros dispositivos (laptop, móvil) para acceder a tu servidor de forma segura.
+    > Sigue el enlace para añadir cada máquina a tu cuenta de Tailscale.
+
+### Paso 6 (Opcional): Configuración de Acceso Público con VPS y Nginx
+
+Este paso te permite acceder a tus servicios a través de un dominio público (ej. `nextcloud.tudominio.com`) sin necesidad de tener la VPN activa en el dispositivo cliente.
+
+1.  **Instala Nginx en tu VPS**:
+    ```bash
+    sudo apt update
+    sudo apt install nginx -y
+    ```
+2.  **Configura tu DNS**: En tu proveedor de dominio (Cloudflare, etc.), crea registros `A` para cada subdominio que desees (ej. `nextcloud`, `jellyfin`, `mattermost`) apuntando a la IP pública de tu VPS.
+
+3.  **Crea el archivo de configuración del proxy inverso en el VPS**:
+    ```bash
+    sudo nano /etc/nginx/nginx.conf
+    ```
+4.  **Pega la siguiente configuración dentro del bloque `http { ... }`**, ajustando los nombres de servidor (`server_name`) a tus dominios y `dracocloud` al **nombre o IP de Tailscale de tu servidor doméstico**.
+
+    ```nginx
+    # --- nextcloud ---
+    server {
+      listen 80;
+      server_name next.tudominio.com;
+      location / {
+          proxy_pass http://dracocloud:8080; # Reemplaza dracocloud y el puerto si es necesario
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+    }
+
+    # --- jellyfin ---
+    server {
+      listen 80;
+      server_name jellyfin.tudominio.com;
+      location / {
+          proxy_pass http://dracocloud:8096;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+    }
+
+    # --- mattermost ---
+    server {
+      listen 80;
+      server_name mattermost.tudominio.com;
+      location / {
+          proxy_pass http://dracocloud:8065;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+    }
+    
+    # --- Añade más bloques 'server' para los otros servicios (n8n, portainer, etc.) ---
+    ```
+    > **Recomendación**: Para producción, es altamente aconsejable asegurar esta conexión con certificados SSL/TLS, por ejemplo, usando Certbot con Let's Encrypt.
+
+5.  **Prueba y recarga la configuración de Nginx**:
+    ```bash
+    sudo nginx -t
+    sudo systemctl reload nginx
+    ```
 
 ---
 
 ## 🚀 Uso y Mantenimiento
 
 * **Ver el estado de los contenedores**: `docker ps -a`
-* **Ver los logs de un servicio**: `docker compose logs -f <nombre_del_servicio>` (ej. `nextcloud`)
+* **Ver los logs de un servicio**: `docker compose logs -f <nombre_del_servicio>`
 * **Detener los servicios**: `docker compose down`
 * **Actualizar los contenedores**:
     ```bash
-    # Descarga las últimas imágenes
     docker compose pull
-    
-    # Reinicia los servicios con las nuevas imágenes
     docker compose up -d
     ```
 
