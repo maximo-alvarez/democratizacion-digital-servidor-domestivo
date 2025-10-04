@@ -140,20 +140,20 @@ Si tienes un segundo disco para los datos:
 
 ### Paso 6 (Opcional): Configuración de Acceso Público con VPS y Nginx
 
-Este paso te permite acceder a tus servicios a través de un dominio público (ej. `nextcloud.tudominio.com`) sin necesidad de tener la VPN activa en el dispositivo cliente.
+Este paso te permite acceder a tus servicios a través de un dominio público (ej. `nextcloud.tudominio.com`).
 
 1.  **Instala Nginx en tu VPS**:
     ```bash
     sudo apt update
     sudo apt install nginx -y
     ```
-2.  **Configura tu DNS**: En tu proveedor de dominio (Cloudflare, etc.), crea registros `A` para cada subdominio que desees (ej. `nextcloud`, `jellyfin`, `mattermost`) apuntando a la IP pública de tu VPS.
+2.  **Configura tu DNS**: En tu proveedor de dominio, crea registros `A` para cada subdominio apuntando a la IP pública de tu VPS.
 
 3.  **Crea el archivo de configuración del proxy inverso en el VPS**:
     ```bash
     sudo nano /etc/nginx/nginx.conf
     ```
-4.  **Pega la siguiente configuración dentro del bloque `http { ... }`**, ajustando los nombres de servidor (`server_name`) a tus dominios y `dracocloud` al **nombre o IP de Tailscale de tu servidor doméstico**.
+4.  **Pega la siguiente configuración dentro del bloque `http { ... }`**, ajustando los `server_name` a tus dominios y `dracocloud` al **nombre o IP de Tailscale de tu servidor doméstico**.
 
     ```nginx
     # --- nextcloud ---
@@ -168,42 +168,71 @@ Este paso te permite acceder a tus servicios a través de un dominio público (e
           proxy_set_header X-Forwarded-Proto $scheme;
       }
     }
-
-    # --- jellyfin ---
-    server {
-      listen 80;
-      server_name jellyfin.tudominio.com;
-      location / {
-          proxy_pass http://dracocloud:8096;
-          proxy_set_header Host $host;
-          proxy_set_header X-Real-IP $remote_addr;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto $scheme;
-      }
-    }
-
-    # --- mattermost ---
-    server {
-      listen 80;
-      server_name mattermost.tudominio.com;
-      location / {
-          proxy_pass http://dracocloud:8065;
-          proxy_set_header Host $host;
-          proxy_set_header X-Real-IP $remote_addr;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto $scheme;
-      }
-    }
     
-    # --- Añade más bloques 'server' para los otros servicios (n8n, portainer, etc.) ---
+    # --- n8n (con soporte para WebSockets) ---
+    server {
+      listen 80;
+      server_name n8n.tudominio.com;
+      location / {
+          proxy_pass http://dracocloud:5678;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          
+          # --- Líneas clave para WebSockets ---
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+      }
+    }
+
+    # --- Añade más bloques 'server' para los otros servicios ---
     ```
-    > **Recomendación**: Para producción, es altamente aconsejable asegurar esta conexión con certificados SSL/TLS, por ejemplo, usando Certbot con Let's Encrypt.
+    > **Recomendación**: Para producción, es altamente aconsejable asegurar esta conexión con certificados SSL/TLS usando Certbot con Let's Encrypt.
 
 5.  **Prueba y recarga la configuración de Nginx**:
     ```bash
     sudo nginx -t
     sudo systemctl reload nginx
     ```
+
+---
+
+## 🐛 Troubleshooting
+
+### n8n: Error "Connection lost" al usar Proxy Inverso
+
+Este error es un síntoma clásico de que las conexiones **WebSocket** no están pasando correctamente a través de tu proxy. La interfaz de n8n necesita esta conexión en tiempo real para funcionar.
+
+**Solución en 2 pasos:**
+
+1.  **Asegura la configuración de entorno de n8n**:
+    Abre tu archivo `.env` y asegúrate de que las siguientes variables estén correctamente configuradas para n8n:
+    ```env
+    # URL pública completa donde accedes a n8n
+    WEBHOOK_URL=[https://n8n.tudominio.com](https://n8n.tudominio.com)
+    
+    # Asegúrate de que esto sea 'true' si usas HTTPS
+    N8N_SECURE_COOKIE=true
+    ```
+    Después de guardar los cambios, reinicia el contenedor de n8n: `docker compose up -d --force-recreate n8n`.
+
+2.  **Habilita el soporte para WebSockets en Nginx**:
+    En la configuración de tu proxy inverso para n8n en el VPS, es crucial añadir las siguientes tres líneas dentro del bloque `location / { ... }` para permitir el paso de las conexiones WebSocket.
+
+    ```nginx
+    location / {
+        proxy_pass http://dracocloud:5678;
+        # ... otras cabeceras proxy ...
+        
+        # --- Líneas clave para WebSockets ---
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+    ```
+    La guía en el **Paso 6** ya incluye esta configuración.
 
 ---
 
