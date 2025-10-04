@@ -74,7 +74,7 @@ services:
       - dracocloud
 
   # ----------------------------------------
-  # Servicio de n8n (Automatizaciones)
+  # Servicio de n8n (Automatizaciones) - CONFIGURACIÓN ACTUALIZADA
   # ----------------------------------------
   n8n:
     image: docker.n8n.io/n8nio/n8n
@@ -95,7 +95,9 @@ services:
       - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_POSTGRESDB_SCHEMA=public
       - N8N_PROTOCOL=https
-      - N8N_SECURE_COOKIE=false
+      - N8N_HOST=0.0.0.0
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - N8N_SECURE_COOKIE=${N8N_SECURE_COOKIE:-true} 
     networks:
       - dracocloud
     depends_on:
