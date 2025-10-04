@@ -37,9 +37,14 @@ PORTAINER_PORT=9000
 # URLs y Dominios de Confianza
 # ----------------------------------------
 # Lista de dominios y IPs de confianza para Nextcloud, separados por coma.
-# Incluye IPs locales, el nombre del contenedor y los dominios públicos.
 NEXTCLOUD_TRUSTED_DOMAINS=localhost,192.168.0.10,nextcloud,next.${MAIN_DOMAIN}
 
 # URL pública para acceder a tus servicios.
 JELLYFIN_URL=https://jellyfin.${MAIN_DOMAIN}
 MATTERMOST_URL=https://mattermost.${MAIN_DOMAIN}
+
+# --- Configuración específica para n8n ---
+# URL pública completa donde accedes a n8n. Necesaria para los webhooks.
+WEBHOOK_URL=https://n8n.${MAIN_DOMAIN}
+# Poner en 'true' si accedes a n8n a través de un proxy inverso con HTTPS.
+N8N_SECURE_COOKIE=true
