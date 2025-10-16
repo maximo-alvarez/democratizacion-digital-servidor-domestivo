@@ -1,0 +1,34 @@
+flowchart TD
+ subgraph Internet["Internet"]
+        ClientPublico["👩‍💻 Cliente Público"]
+        ClientVPN["👨‍💻 Cliente en Red VPN"]
+  end
+ subgraph subGraph1["Frontera de Red"]
+        PublicDomain("servicio.dominio.com / Cloudflare")
+        TailscaleNet("Red Privada Tailscale")
+  end
+ subgraph VPS["VPS (Ubuntu Server)"]
+        VPSProxy["Proxy Inverso<br>(Nginx)"]
+  end
+ subgraph subGraph3["Docker Engine"]
+        RP["Red Interna de Docker"]
+        App1["Contenedor Aplicación 1"]
+        App2["Contenedor Aplicación 2"]
+        DB[("Contenedor<br>PostgreSQL")]
+  end
+ subgraph subGraph4["Mini PC (Ubuntu Server)"]
+        subGraph3
+        TailscaleService["Daemon de Tailscale"]
+  end
+    ClientPublico -- HTTPS/443 --> PublicDomain
+    PublicDomain -- Tráfico enrutado --> VPSProxy
+    VPSProxy -- Redirección (proxy_pass) --> RP
+    ClientVPN -- Conexión segura --> TailscaleNet
+    TailscaleNet -- Acceso directo --> TailscaleService
+    RP -- Redirecciona a --> App1 & App2
+    App1 -- Comunica vía red interna --> DB
+    App2 -- Comunica vía red interna --> DB
+    TailscaleService -- Se comunica --> RP
+
+
+
